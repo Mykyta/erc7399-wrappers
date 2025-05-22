@@ -34,6 +34,7 @@
   optimism = { key = "${API_KEY_OPTIMISTIC_ETHERSCAN}", chain = 10 }
   polygon = { key = "${API_KEY_POLYGONSCAN}", chain = 137 }
   # sepolia = { key = "${API_KEY_ETHERSCAN}", chain = 58008 }
+  berachain = { key = "${BERACHAIN_API_KEY}", chain = 80094 }
 
 [fmt]
   bracket_spacing = true
