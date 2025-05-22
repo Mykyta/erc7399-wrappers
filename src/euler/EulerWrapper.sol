@@ -6,7 +6,6 @@ import { IEFlashLoanCallback } from "./interfaces/IEFlashLoanCallback.sol";
 import { IEVKFactoryPerspective } from "./interfaces/IEVKFactoryPerspective.sol";
 import { IEVault } from "./interfaces/IEVault.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { console2 } from "forge-std/console2.sol";
 
 /// @dev Euler Flash Lender that uses Euler as source of liquidity.
 contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
