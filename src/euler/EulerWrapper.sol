@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {BaseWrapper} from "../BaseWrapper.sol";
-import {IEFlashLoanCallback} from "./interfaces/IEFlashLoanCallback.sol";
-import {IEVault} from "./interfaces/IEVault.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { BaseWrapper } from "../BaseWrapper.sol";
+import { IEFlashLoanCallback } from "./interfaces/IEFlashLoanCallback.sol";
+import { IEVault } from "./interfaces/IEVault.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @dev Euler Flash Lender that uses Euler as source of liquidity.
 contract EulerWrapper is BaseWrapper, IEFlashLoanCallback, AccessControl {
@@ -22,7 +22,13 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, owner);
     }
 
-    function setVaults(address[] calldata tokenList, address[] calldata vaultList) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setVaults(
+        address[] calldata tokenList,
+        address[] calldata vaultList
+    )
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         if (tokenList.length != vaultList.length) {
             revert InvalidOperationLength(tokenList.length, vaultList.length);
         }

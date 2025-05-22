@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.27;
 
-import {EulerWrapper} from "../src/euler/EulerWrapper.sol";
-import {MockBorrower} from "./MockBorrower.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {CommonBase} from "forge-std/Base.sol";
-import {StdChains} from "forge-std/StdChains.sol";
-import {StdCheats, StdCheatsSafe} from "forge-std/StdCheats.sol";
-import {StdUtils} from "forge-std/StdUtils.sol";
-import {Test} from "forge-std/Test.sol";
-import {console2} from "forge-std/console2.sol";
+import { EulerWrapper } from "../src/euler/EulerWrapper.sol";
+import { MockBorrower } from "./MockBorrower.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { CommonBase } from "forge-std/Base.sol";
+import { StdChains } from "forge-std/StdChains.sol";
+import { StdCheats, StdCheatsSafe } from "forge-std/StdCheats.sol";
+import { StdUtils } from "forge-std/StdUtils.sol";
+import { Test } from "forge-std/Test.sol";
+import { console2 } from "forge-std/console2.sol";
 
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
@@ -31,7 +31,7 @@ contract EulerWrapperTest is Test {
             revert("API_KEY_ALCHEMY variable missing");
         }
 
-        vm.createSelectFork({urlOrAlias: "base", blockNumber: 30017722});
+        vm.createSelectFork({ urlOrAlias: "base", blockNumber: 30_017_722 });
         usdcVault = 0x0A1a3b5f2041F33522C4efc754a7D096f880eE16;
         USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
         arETH = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
@@ -64,7 +64,7 @@ contract EulerWrapperTest is Test {
 
     function test_maxFlashLoan() external {
         console2.log("test_maxFlashLoan");
-        assertEq(wrapper.maxFlashLoan(USDC), 2504267155141, "Max flash loan not right");
+        assertEq(wrapper.maxFlashLoan(USDC), 2_504_267_155_141, "Max flash loan not right");
     }
 
     function test_flashLoan() external {
@@ -80,7 +80,8 @@ contract EulerWrapperTest is Test {
         assertEq(borrower.flashInitiator(), address(borrower));
         assertEq(address(borrower.flashAsset()), address(USDC));
         assertEq(borrower.flashAmount(), loan);
-        assertEq(borrower.flashBalance(), loan); // The amount we transferred to pay for fees, plus the amount we borrowed
+        assertEq(borrower.flashBalance(), loan); // The amount we transferred to pay for fees, plus the amount we
+            // borrowed
         assertEq(borrower.flashFee(), 0);
     }
 
