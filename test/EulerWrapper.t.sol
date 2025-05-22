@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.30;
 
 import { EulerWrapper } from "../src/euler/EulerWrapper.sol";
 import { MockBorrower } from "./MockBorrower.sol";
@@ -31,7 +31,8 @@ contract EulerWrapperTest is Test {
             revert("API_KEY_ALCHEMY variable missing");
         }
 
-        vm.createSelectFork({ urlOrAlias: "base", blockNumber: 30_017_722 });
+        vm.createSelectFork({ urlOrAlias: "base", blockNumber: 30_576_967 });
+        address evkFactoryPerspective = 0xFEA8e8a4d7ab8C517c3790E49E92ED7E1166F651;
         usdcVault = 0x0A1a3b5f2041F33522C4efc754a7D096f880eE16;
         USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
         arETH = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
@@ -42,12 +43,8 @@ contract EulerWrapperTest is Test {
         tokens[0] = USDC;
         vaults[0] = usdcVault;
 
-        address owner = address(0x1);
-        vm.startPrank(owner);
-        wrapper = new EulerWrapper(owner);
-        wrapper.setVaults(tokens, vaults);
+        wrapper = new EulerWrapper(evkFactoryPerspective);
         borrower = new MockBorrower(wrapper);
-        vm.stopPrank();
     }
 
     /// @dev Basic test. Run it with `forge test -vvv` to see the console log.
@@ -62,9 +59,17 @@ contract EulerWrapperTest is Test {
         wrapper.flashFee(arETH, 1e18);
     }
 
+    function test_setVaults_unverifiedVault() external {
+        console2.log("test_setVaults");
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(0);
+        vm.expectRevert(abi.encodeWithSelector(EulerWrapper.UnverifiedVault.selector, address(0)));
+        wrapper.setVaults(vaults);
+    }
+
     function test_maxFlashLoan() external {
         console2.log("test_maxFlashLoan");
-        assertEq(wrapper.maxFlashLoan(USDC), 2_504_267_155_141, "Max flash loan not right");
+        assertEq(wrapper.maxFlashLoan(USDC), 21_277_790, "Max flash loan not right");
     }
 
     function test_flashLoan() external {

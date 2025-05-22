@@ -1,41 +1,44 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.30;
 
 import { BaseWrapper } from "../BaseWrapper.sol";
 import { IEFlashLoanCallback } from "./interfaces/IEFlashLoanCallback.sol";
+import { IEVKFactoryPerspective } from "./interfaces/IEVKFactoryPerspective.sol";
 import { IEVault } from "./interfaces/IEVault.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { console2 } from "forge-std/console2.sol";
 
 /// @dev Euler Flash Lender that uses Euler as source of liquidity.
-contract EulerWrapper is BaseWrapper, IEFlashLoanCallback, AccessControl {
+contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
     error UnsupportedAsset(address asset);
+    error UnverifiedVault(address vault);
 
-    /**
-     * @dev Mismatch between the parameters length for an operation call.
-     */
-    error InvalidOperationLength(uint256 tokens, uint256 vaults);
+    event VaultsAdded(uint256 count);
 
     mapping(IERC20 token => IEVault vault) public vaults;
 
-    constructor(address owner) {
-        _grantRole(DEFAULT_ADMIN_ROLE, owner);
+    IEVKFactoryPerspective internal factory;
+
+    constructor(address evkFactoryPerspective) {
+        factory = IEVKFactoryPerspective(evkFactoryPerspective);
+        address[] memory vaultList = factory.verifiedArray();
+        for (uint256 i = 0; i < vaultList.length; ++i) {
+            IEVault vault = IEVault(vaultList[i]);
+            address asset = vault.asset();
+            vaults[IERC20(asset)] = vault;
+        }
+        emit VaultsAdded(vaultList.length);
     }
 
-    function setVaults(
-        address[] calldata tokenList,
-        address[] calldata vaultList
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        if (tokenList.length != vaultList.length) {
-            revert InvalidOperationLength(tokenList.length, vaultList.length);
+    function setVaults(address[] calldata vaultList) external {
+        for (uint256 i = 0; i < vaultList.length; ++i) {
+            address vaultAddr = vaultList[i];
+            if (!factory.isVerified(vaultAddr)) revert UnverifiedVault(vaultAddr);
+            IEVault vault = IEVault(vaultAddr);
+            address asset = vault.asset();
+            vaults[IERC20(asset)] = vault;
         }
-
-        for (uint256 i = 0; i < tokenList.length; ++i) {
-            vaults[IERC20(tokenList[i])] = IEVault(vaultList[i]);
-        }
+        emit VaultsAdded(vaultList.length);
     }
 
     function maxFlashLoan(address asset) public view returns (uint256) {
