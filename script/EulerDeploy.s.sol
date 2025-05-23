@@ -2,6 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { EulerWrapper } from "../src/euler/EulerWrapper.sol";
+import { IEVKFactoryPerspective } from "../src/euler/interfaces/IEVKFactoryPerspective.sol";
 import { CommonBase } from "forge-std/Base.sol";
 import { Script } from "forge-std/Script.sol";
 import { StdChains } from "forge-std/StdChains.sol";
@@ -30,11 +31,11 @@ contract EulerDeploy is Script {
         vm.startBroadcast();
         EulerWrapper wrapper;
         if (chainToDeploy == ChainToDeploy.Berachain) {
-            wrapper = new EulerWrapper(EVK_FACTORY_PERSPECTIVE_BERA);
+            wrapper = new EulerWrapper(IEVKFactoryPerspective(EVK_FACTORY_PERSPECTIVE_BERA));
         } else if (chainToDeploy == ChainToDeploy.Ethereum) {
-            wrapper = new EulerWrapper(EVK_FACTORY_PERSPECTIVE_ETH);
+            wrapper = new EulerWrapper(IEVKFactoryPerspective(EVK_FACTORY_PERSPECTIVE_ETH));
         } else if (chainToDeploy == ChainToDeploy.Base) {
-            wrapper = new EulerWrapper(EVK_FACTORY_PERSPECTIVE_BASE);
+            wrapper = new EulerWrapper(IEVKFactoryPerspective(EVK_FACTORY_PERSPECTIVE_BASE));
         } else {
             revert("Undefined chain");
         }

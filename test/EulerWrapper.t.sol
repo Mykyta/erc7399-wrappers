@@ -2,6 +2,8 @@
 pragma solidity ^0.8.30;
 
 import { EulerWrapper } from "../src/euler/EulerWrapper.sol";
+import { IEVault } from "../src/euler/interfaces/IEVault.sol";
+import { IEVKFactoryPerspective } from "../src/euler/interfaces/IEVKFactoryPerspective.sol";
 import { MockBorrower } from "./MockBorrower.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -31,8 +33,9 @@ contract EulerWrapperTest is Test {
             revert("API_KEY_ALCHEMY variable missing");
         }
 
-        vm.createSelectFork({ urlOrAlias: "base", blockNumber: 30_576_967 });
-        address evkFactoryPerspective = 0xFEA8e8a4d7ab8C517c3790E49E92ED7E1166F651;
+        vm.createSelectFork({ urlOrAlias: "base", blockNumber: 30_614_524 });
+        IEVKFactoryPerspective evkFactoryPerspective =
+            IEVKFactoryPerspective(0xFEA8e8a4d7ab8C517c3790E49E92ED7E1166F651);
         usdcVault = 0x0A1a3b5f2041F33522C4efc754a7D096f880eE16;
         USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
         arETH = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
@@ -60,16 +63,14 @@ contract EulerWrapperTest is Test {
     }
 
     function test_setVaults_unverifiedVault() external {
-        console2.log("test_setVaults");
-        address[] memory vaults = new address[](1);
-        vaults[0] = address(0);
-        vm.expectRevert(abi.encodeWithSelector(EulerWrapper.UnverifiedVault.selector, address(0)));
-        wrapper.setVaults(vaults);
+        console2.log("test_addVault");
+        vm.expectRevert(abi.encodeWithSelector(EulerWrapper.UnverifiedVault.selector));
+        wrapper.addVault(IERC20(USDC), IEVault(address(0)));
     }
 
     function test_maxFlashLoan() external {
         console2.log("test_maxFlashLoan");
-        assertEq(wrapper.maxFlashLoan(USDC), 21_277_790, "Max flash loan not right");
+        assertEq(wrapper.maxFlashLoan(USDC), 1_985_258_139_987, "Max flash loan not right");
     }
 
     function test_flashLoan() external {

@@ -10,43 +10,57 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @dev Euler Flash Lender that uses Euler as source of liquidity.
 contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
     error UnsupportedAsset(address asset);
-    error UnverifiedVault(address vault);
+    error UnverifiedVault();
+
+    /**
+     * @dev No vault for the provided asset
+     */
+    error UnavailableVault();
+
+    /**
+     * @dev A vault doesn't have liquidity
+     */
+    error NoLiquidity();
 
     event VaultsAdded(uint256 count);
 
-    mapping(IERC20 token => IEVault vault) public vaults;
+    mapping(IERC20 token => IEVault[] vaults) public tokenVaults;
 
-    IEVKFactoryPerspective internal factory;
+    IEVKFactoryPerspective internal evkFactory;
 
-    constructor(address evkFactoryPerspective) {
-        factory = IEVKFactoryPerspective(evkFactoryPerspective);
-        address[] memory vaultList = factory.verifiedArray();
+    constructor(IEVKFactoryPerspective evkFactoryPerspective) {
+        evkFactory = evkFactoryPerspective;
+        address[] memory vaultList = evkFactory.verifiedArray();
         for (uint256 i = 0; i < vaultList.length; ++i) {
             IEVault vault = IEVault(vaultList[i]);
             address asset = vault.asset();
-            vaults[IERC20(asset)] = vault;
+            IERC20 token = IERC20(asset);
+            addVault(token, vault);
         }
         emit VaultsAdded(vaultList.length);
     }
 
-    function setVaults(address[] calldata vaultList) external {
-        for (uint256 i = 0; i < vaultList.length; ++i) {
-            address vaultAddr = vaultList[i];
-            if (!factory.isVerified(vaultAddr)) revert UnverifiedVault(vaultAddr);
-            IEVault vault = IEVault(vaultAddr);
-            address asset = vault.asset();
-            vaults[IERC20(asset)] = vault;
+    function addVault(IERC20 token, IEVault vault) public {
+        if (!evkFactory.isVerified(address(vault))) revert UnverifiedVault();
+
+        if (tokenVaults[token].length == 0) {
+            tokenVaults[token] = new IEVault[](0);
         }
-        emit VaultsAdded(vaultList.length);
+        tokenVaults[token].push(vault);
     }
 
     function maxFlashLoan(address asset) public view returns (uint256) {
-        IEVault vault = vaults[IERC20(asset)];
-        if (address(vault) == address(0)) {
-            return 0;
+        IEVault[] memory vaults = tokenVaults[IERC20(asset)];
+        uint256 balance = 0;
+
+        for (uint256 i = 0; i < vaults.length; ++i) {
+            uint256 vaultBalance = IERC20(asset).balanceOf(address(vaults[i]));
+            if (vaultBalance > balance) {
+                balance = vaultBalance;
+            }
         }
 
-        return IERC20(asset).balanceOf(address(vault));
+        return balance;
     }
 
     function flashFee(address asset, uint256 amount) external view returns (uint256) {
@@ -64,7 +78,28 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
     }
 
     function _flashLoan(address asset, uint256 amount, bytes memory data) internal override {
-        IEVault vault = vaults[IERC20(asset)];
+        IEVault[] memory vaults = tokenVaults[IERC20(asset)];
+
+        // Ensure the vaults array is not empty
+        if (vaults.length == 0) {
+            revert UnavailableVault();
+        }
+
+        // find a vault with the max liquidity
+        IEVault vault;
+        uint256 balance = 0;
+        for (uint256 i = 0; i < vaults.length; ++i) {
+            uint256 vaultBalance = IERC20(asset).balanceOf(address(vaults[i]));
+            if (vaultBalance > balance) {
+                balance = vaultBalance;
+                vault = vaults[i];
+            }
+        }
+
+        if (address(vault) == address(0)) {
+            revert NoLiquidity();
+        }
+
         vault.flashLoan(amount, abi.encode(asset, amount, data));
     }
 }
