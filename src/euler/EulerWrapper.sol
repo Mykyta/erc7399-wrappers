@@ -32,7 +32,7 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
     event VaultExists();
 
     /**
-    * @dev If a vault was removed
+     * @dev If a vault was removed
      */
     event VaultRemoved();
 
@@ -109,12 +109,6 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
     function onFlashLoan(bytes calldata params) external override {
         (address asset, uint256 amount, bytes memory data) = abi.decode(params, (address, uint256, bytes));
         _bridgeToCallback(asset, amount, 0, data);
-
-        if (IERC20(asset).balanceOf(msg.sender) < amount) {
-            revert InsufficientRepayment(asset, amount);
-        } else {
-            IERC20(asset).safeTransfer(msg.sender, amount);
-        }
     }
 
     function _flashLoan(address asset, uint256 amount, bytes memory data) internal override {
@@ -145,9 +139,4 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
     function _repayTo() internal view override returns (address) {
         return msg.sender;
     }
-
-    /// @dev Transfer the assets to the loan receiver.
-    /// Overridden because the provider can send the funds directly to the Euler vault
-    // solhint-disable-next-line no-empty-blocks
-    function _transferAssets(address, uint256, address) internal override { }
 }
