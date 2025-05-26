@@ -42,11 +42,24 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
 
     function addVault(IERC20 token, IEVault vault) public {
         if (!evkFactory.isVerified(address(vault))) revert UnverifiedVault();
-
-        if (tokenVaults[token].length == 0) {
-            tokenVaults[token] = new IEVault[](0);
-        }
         tokenVaults[token].push(vault);
+    }
+
+    function removeVault(IERC20 token, IEVault vault) public {
+        IEVault[] storage vaults = tokenVaults[token];
+        uint256 len = vaults.length;
+
+        for (uint256 i = 0; i < len; i++) {
+            if (vaults[i] == vault) {
+                vaults[i] = vaults[len - 1];
+                vaults.pop();
+                break;
+            }
+        }
+    }
+
+    function getVaultCount(IERC20 token) external view returns (uint256) {
+        return tokenVaults[token].length;
     }
 
     function maxFlashLoan(address asset) public view returns (uint256) {
@@ -85,14 +98,13 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
             revert UnavailableVault();
         }
 
-        // find a vault with the max liquidity
+        // find a vault with enough liquidity
         IEVault vault;
-        uint256 balance = 0;
         for (uint256 i = 0; i < vaults.length; ++i) {
             uint256 vaultBalance = IERC20(asset).balanceOf(address(vaults[i]));
-            if (vaultBalance > balance) {
-                balance = vaultBalance;
+            if (vaultBalance > amount) {
                 vault = vaults[i];
+                break;
             }
         }
 

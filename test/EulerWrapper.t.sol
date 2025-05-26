@@ -19,6 +19,7 @@ import { console2 } from "forge-std/console2.sol";
 contract EulerWrapperTest is Test {
     using SafeERC20 for IERC20;
 
+    IEVKFactoryPerspective public mockEvkFactory;
     EulerWrapper internal wrapper;
     MockBorrower internal borrower;
     address internal USDC;
@@ -34,19 +35,25 @@ contract EulerWrapperTest is Test {
         }
 
         vm.createSelectFork({ urlOrAlias: "base", blockNumber: 30_614_524 });
-        IEVKFactoryPerspective evkFactoryPerspective =
-            IEVKFactoryPerspective(0xFEA8e8a4d7ab8C517c3790E49E92ED7E1166F651);
+        mockEvkFactory = IEVKFactoryPerspective(address(vm.addr(1)));
         usdcVault = 0x0A1a3b5f2041F33522C4efc754a7D096f880eE16;
         USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
         arETH = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
 
-        address[] memory tokens = new address[](1);
         address[] memory vaults = new address[](1);
-
-        tokens[0] = USDC;
         vaults[0] = usdcVault;
+        vm.mockCall(
+            address(mockEvkFactory),
+            abi.encodeWithSelector(IEVKFactoryPerspective.verifiedArray.selector),
+            abi.encode(vaults)
+        );
+        vm.mockCall(
+            address(mockEvkFactory),
+            abi.encodeWithSelector(mockEvkFactory.isVerified.selector, usdcVault),
+            abi.encode(true)
+        );
 
-        wrapper = new EulerWrapper(evkFactoryPerspective);
+        wrapper = new EulerWrapper(mockEvkFactory);
         borrower = new MockBorrower(wrapper);
     }
 
@@ -62,10 +69,60 @@ contract EulerWrapperTest is Test {
         wrapper.flashFee(arETH, 1e18);
     }
 
-    function test_setVaults_unverifiedVault() external {
+    function test_addVault() public {
         console2.log("test_addVault");
+        IEVault vault1 = IEVault(address(vm.addr(10)));
+        IEVault vault2 = IEVault(address(vm.addr(20)));
+        IERC20 token = IERC20(address(vm.addr(5)));
+
+        vm.mockCall(
+            address(mockEvkFactory),
+            abi.encodeWithSelector(mockEvkFactory.isVerified.selector, address(vault1)),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            address(mockEvkFactory),
+            abi.encodeWithSelector(mockEvkFactory.isVerified.selector, address(vault2)),
+            abi.encode(true)
+        );
+
+        wrapper.addVault(token, vault1);
+        wrapper.addVault(token, vault2);
+
+        // Verify that the vault was added to tokenVaults
+        IEVault _vault1 = wrapper.tokenVaults(token, 0);
+        IEVault _vault2 = wrapper.tokenVaults(token, 1);
+        uint256 vaultCount = wrapper.getVaultCount(token);
+        assertEq(vaultCount, 2, "Vault count is incorrect");
+        assertEq(address(_vault1), address(vault1), "Vault added incorrectly");
+        assertEq(address(_vault2), address(vault2), "Vault added incorrectly");
+    }
+
+    function test_removeVault() public {
+        console2.log("test_removeVault");
+        IERC20 token = IERC20(USDC);
+
+        // check that vault was added before
+        uint256 vaultCountBefore = wrapper.getVaultCount(token);
+        assertEq(vaultCountBefore, 1, "Vault is not removed");
+
+        wrapper.removeVault(token, IEVault(usdcVault));
+        uint256 vaultCountAfter = wrapper.getVaultCount(token);
+        assertEq(vaultCountAfter, 0, "Vault is not removed");
+    }
+
+    function test_addVault_unverifiedVault() external {
+        console2.log("test_addVault_unverifiedVault");
+        IEVault vault = IEVault(address(vm.addr(10)));
+
+        vm.mockCall(
+            address(mockEvkFactory),
+            abi.encodeWithSelector(mockEvkFactory.isVerified.selector, address(vault)),
+            abi.encode(false)
+        );
+
         vm.expectRevert(abi.encodeWithSelector(EulerWrapper.UnverifiedVault.selector));
-        wrapper.addVault(IERC20(USDC), IEVault(address(0)));
+        wrapper.addVault(IERC20(USDC), vault);
     }
 
     function test_maxFlashLoan() external {
