@@ -27,6 +27,11 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
      */
     event VaultExists();
 
+    /**
+    * @dev If a vault was removed
+     */
+    event VaultRemoved();
+
     event VaultsAdded(uint256 count);
 
     mapping(IERC20 token => IEVault[] vaults) public tokenVaults;
@@ -67,6 +72,7 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
             if (vaults[i] == vault) {
                 vaults[i] = vaults[len - 1];
                 vaults.pop();
+                emit VaultRemoved();
                 break;
             }
         }
