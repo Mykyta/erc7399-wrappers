@@ -37,8 +37,8 @@ contract EulerWrapperTest is Test {
 
         vm.createSelectFork({ urlOrAlias: "base", blockNumber: 30_614_524 });
         mockEvkFactory = IEVKFactoryPerspective(address(vm.addr(1)));
-        usdcVault1 = 0x0A1a3b5f2041F33522C4efc754a7D096f880eE16;
-        usdcVault2 = 0xC063C3b3625DF5F362F60f35B0bcd98e0fa650fb;
+        usdcVault1 = 0xC063C3b3625DF5F362F60f35B0bcd98e0fa650fb; // 69932415752 balance
+        usdcVault2 = 0x0A1a3b5f2041F33522C4efc754a7D096f880eE16; // 1985258139987 balance
         USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
         arETH = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
 
@@ -140,7 +140,7 @@ contract EulerWrapperTest is Test {
 
     function test_flashLoan() external {
         console2.log("test_flashLoan");
-        uint256 loan = 10e6;
+        uint256 loan = 100_000e6;
         bytes memory result = borrower.flashBorrow(USDC, loan);
 
         // Test the return values passed through the wrapper
