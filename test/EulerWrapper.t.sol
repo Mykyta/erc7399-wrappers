@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.30;
 
-import { EulerWrapper } from "../src/euler/EulerWrapper.sol";
+import { EulerWrapper, IERC20 } from "../src/euler/EulerWrapper.sol";
 import { IEVault } from "../src/euler/interfaces/IEVault.sol";
 import { IEVKFactoryPerspective } from "../src/euler/interfaces/IEVKFactoryPerspective.sol";
 import { MockBorrower } from "./MockBorrower.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { CommonBase } from "forge-std/Base.sol";
 import { StdChains } from "forge-std/StdChains.sol";
@@ -140,7 +139,7 @@ contract EulerWrapperTest is Test {
 
     function test_flashLoan() external {
         console2.log("test_flashLoan");
-        uint256 loan = 100_000e6;
+        uint256 loan = 100_000e6; // will be used the second vault with enough balance
         bytes memory result = borrower.flashBorrow(USDC, loan);
 
         // Test the return values passed through the wrapper
@@ -151,8 +150,8 @@ contract EulerWrapperTest is Test {
         assertEq(borrower.flashInitiator(), address(borrower));
         assertEq(address(borrower.flashAsset()), address(USDC));
         assertEq(borrower.flashAmount(), loan);
-        assertEq(borrower.flashBalance(), loan); // The amount we transferred to pay for fees, plus the amount we
-            // borrowed
+        // The amount we transferred to pay for fees, plus the amount we borrowed
+        assertEq(borrower.flashBalance(), loan);
         assertEq(borrower.flashFee(), 0);
     }
 
