@@ -22,6 +22,11 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
      */
     error NoLiquidity();
 
+    /**
+     * @dev A vault exists for a given token
+     */
+    event VaultExists();
+
     event VaultsAdded(uint256 count);
 
     mapping(IERC20 token => IEVault[] vaults) public tokenVaults;
@@ -42,6 +47,15 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
 
     function addVault(IERC20 token, IEVault vault) public {
         if (!evkFactory.isVerified(address(vault))) revert UnverifiedVault();
+
+        // Check for duplicates
+        IEVault[] storage vaults = tokenVaults[token];
+        for (uint256 i = 0; i < vaults.length; ++i) {
+            if (vaults[i] == vault) {
+                emit VaultExists();
+                return;
+            }
+        }
         tokenVaults[token].push(vault);
     }
 
