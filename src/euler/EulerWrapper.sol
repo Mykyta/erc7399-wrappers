@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { BaseWrapper } from "../BaseWrapper.sol";
+import { BaseWrapper, IERC20 } from "../BaseWrapper.sol";
 import { IEFlashLoanCallback } from "./interfaces/IEFlashLoanCallback.sol";
 import { IEVKFactoryPerspective } from "./interfaces/IEVKFactoryPerspective.sol";
 import { IEVault } from "./interfaces/IEVault.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @dev Euler Flash Lender that uses Euler as source of liquidity.
 contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
+    using SafeERC20 for IERC20;
+
     error UnsupportedAsset(address asset);
     error UnverifiedVault();
 
@@ -16,6 +18,8 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
      * @dev No vault for the provided asset
      */
     error UnavailableVault();
+
+    error InsufficientRepayment(address asset, uint256 amount);
 
     /**
      * @dev A vault doesn't have liquidity
@@ -106,8 +110,11 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
         (address asset, uint256 amount, bytes memory data) = abi.decode(params, (address, uint256, bytes));
         _bridgeToCallback(asset, amount, 0, data);
 
-        // repay amount back to the Euler contract
-        IERC20(asset).transfer(msg.sender, amount);
+        if (IERC20(asset).balanceOf(msg.sender) < amount) {
+            revert InsufficientRepayment(asset, amount);
+        } else {
+            IERC20(asset).safeTransfer(msg.sender, amount);
+        }
     }
 
     function _flashLoan(address asset, uint256 amount, bytes memory data) internal override {
@@ -134,4 +141,13 @@ contract EulerWrapper is BaseWrapper, IEFlashLoanCallback {
 
         vault.flashLoan(amount, abi.encode(asset, amount, data));
     }
+
+    function _repayTo() internal view override returns (address) {
+        return msg.sender;
+    }
+
+    /// @dev Transfer the assets to the loan receiver.
+    /// Overridden because the provider can send the funds directly to the Euler vault
+    // solhint-disable-next-line no-empty-blocks
+    function _transferAssets(address, uint256, address) internal override { }
 }
