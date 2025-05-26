@@ -24,7 +24,8 @@ contract EulerWrapperTest is Test {
     MockBorrower internal borrower;
     address internal USDC;
     address internal arETH;
-    address internal usdcVault;
+    address internal usdcVault1;
+    address internal usdcVault2;
 
     /// @dev A function invoked before each test case is run.
     function setUp() public virtual {
@@ -36,12 +37,14 @@ contract EulerWrapperTest is Test {
 
         vm.createSelectFork({ urlOrAlias: "base", blockNumber: 30_614_524 });
         mockEvkFactory = IEVKFactoryPerspective(address(vm.addr(1)));
-        usdcVault = 0x0A1a3b5f2041F33522C4efc754a7D096f880eE16;
+        usdcVault1 = 0x0A1a3b5f2041F33522C4efc754a7D096f880eE16;
+        usdcVault2 = 0xC063C3b3625DF5F362F60f35B0bcd98e0fa650fb;
         USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
         arETH = 0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
 
-        address[] memory vaults = new address[](1);
-        vaults[0] = usdcVault;
+        address[] memory vaults = new address[](2);
+        vaults[0] = usdcVault1;
+        vaults[1] = usdcVault2;
         vm.mockCall(
             address(mockEvkFactory),
             abi.encodeWithSelector(IEVKFactoryPerspective.verifiedArray.selector),
@@ -49,7 +52,12 @@ contract EulerWrapperTest is Test {
         );
         vm.mockCall(
             address(mockEvkFactory),
-            abi.encodeWithSelector(mockEvkFactory.isVerified.selector, usdcVault),
+            abi.encodeWithSelector(mockEvkFactory.isVerified.selector, usdcVault1),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            address(mockEvkFactory),
+            abi.encodeWithSelector(mockEvkFactory.isVerified.selector, usdcVault2),
             abi.encode(true)
         );
 
@@ -104,11 +112,11 @@ contract EulerWrapperTest is Test {
 
         // check that vault was added before
         uint256 vaultCountBefore = wrapper.getVaultCount(token);
-        assertEq(vaultCountBefore, 1, "Vault is not removed");
+        assertEq(vaultCountBefore, 2, "Vault count is incorrect");
 
-        wrapper.removeVault(token, IEVault(usdcVault));
+        wrapper.removeVault(token, IEVault(usdcVault1));
         uint256 vaultCountAfter = wrapper.getVaultCount(token);
-        assertEq(vaultCountAfter, 0, "Vault is not removed");
+        assertEq(vaultCountAfter, 1, "Vault is not removed");
     }
 
     function test_addVault_unverifiedVault() external {
